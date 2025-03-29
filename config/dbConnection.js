@@ -1,8 +1,17 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+// Track connection status (helpful in serverless)
+let isConnected = false;
+
 const connectDB = async () => {
   try {
+    // If already connected, reuse connection (important for serverless)
+    if (isConnected) {
+      console.log('Using existing MongoDB connection');
+      return;
+    }
+
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -10,6 +19,7 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,
     });
 
+    isConnected = true;
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     
     // Set up event listeners for the connection
@@ -18,23 +28,34 @@ const connectDB = async () => {
     });
     
     mongoose.connection.on('disconnected', () => {
+      isConnected = false;
       console.log('MongoDB disconnected, attempting to reconnect...');
     });
     
     mongoose.connection.on('reconnected', () => {
+      isConnected = true;
       console.log('MongoDB reconnected successfully');
     });
 
-    process.on('SIGINT', async () => {
-      await mongoose.connection.close();
-      console.log('MongoDB connection closed due to app termination');
-      process.exit(0);
-    });
+    // Only attach SIGINT handler in non-serverless environment
+    if (!process.env.VERCEL) {
+      process.on('SIGINT', async () => {
+        await mongoose.connection.close();
+        console.log('MongoDB connection closed due to app termination');
+        process.exit(0);
+      });
+    }
 
     return conn;
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error.message}`);
-    process.exit(1);
+    
+    // Don't exit process in serverless environment
+    if (!process.env.VERCEL) {
+      process.exit(1);
+    }
+    
+    return null;
   }
 };
 

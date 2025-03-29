@@ -78,6 +78,20 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Root route - Add this to handle the root path
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Welcome to Aegis API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      users: '/api/users'
+    },
+    documentation: 'API documentation coming soon'
+  });
+});
+
 // API routes
 app.use('/api/users', userRoutes);
 
