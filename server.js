@@ -109,28 +109,33 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Set port and start server
-const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-});
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  console.log('UNHANDLED REJECTION! 💥 Shutting down...');
-  console.error(err.name, err.message);
-  
-  // Close server & exit process
-  server.close(() => {
-    process.exit(1);
+// If running on Vercel serverless, we need to export the app instead of starting it directly
+if (process.env.VERCEL) {
+  // Export for serverless
+  module.exports = app;
+} else {
+  // Start server for local development
+  const PORT = process.env.PORT || 5000;
+  const server = app.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   });
-});
 
-// Handle SIGTERM
-process.on('SIGTERM', () => {
-  console.log('👋 SIGTERM RECEIVED. Shutting down gracefully');
-  server.close(() => {
-    console.log('💥 Process terminated!');
-    // process.exit() is not needed here as SIGTERM will automatically terminate the process
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (err) => {
+    console.log('UNHANDLED REJECTION! 💥 Shutting down...');
+    console.error(err.name, err.message);
+    
+    // Close server & exit process
+    server.close(() => {
+      process.exit(1);
+    });
   });
-});
+
+  // Handle SIGTERM
+  process.on('SIGTERM', () => {
+    console.log('👋 SIGTERM RECEIVED. Shutting down gracefully');
+    server.close(() => {
+      console.log('💥 Process terminated!');
+    });
+  });
+}
