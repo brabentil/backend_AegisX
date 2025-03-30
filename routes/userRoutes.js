@@ -33,7 +33,7 @@ router.post('/logoutAll', userController.logoutAll);
  */
 
 // Admin user management
-router.use(restrictTo('admin', 'superadmin')); // Requires admin role
+router.use(restrictTo('admin', 'superadmin')); 
 
 router.route('/')
   .get(userController.getAllUsers);
